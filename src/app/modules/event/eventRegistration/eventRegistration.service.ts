@@ -9,7 +9,6 @@ import { USER_ROLES } from '../../../../enums/user';
 import { User } from '../../user/user.model';
 import { Notification } from '../../notification/notification.mode';
 import { NotificationCount } from '../../notification/notificationCountModel';
-import admin from '../../../../helpers/firebaseConfig';
 
 const createToDB = async (payload: IEventRegistration) => {
   // Check if event exists
@@ -162,79 +161,6 @@ const updateInDB = async (id: string, payload: Partial<IEventRegistration>) => {
 
   const receiverId = updated.user;
 
-  // 3️⃣ Handle CONFIRMED
-  if (updated.status === EventRegistrationStatus.CONFIRMED) {
-    // Send FCM if token exists
-    if (existUser.fcmToken) {
-      admin.messaging().send({
-        token: existUser.fcmToken,
-        notification: {
-          title: "Event Registration Confirmed",
-          body: "Your event registration has been confirmed",
-        },
-        data: {
-          receiver: String(receiverId),
-          sender: "system",
-          path: "/event-registration",
-        },
-      });
-    }
-
-    // Create notification
-    await Notification.create({
-      receiver: receiverId,
-      title: "Event Registration Confirmed",
-      message: "Your event registration has been confirmed",
-      refId: updated._id,
-      sender: null,
-      path: "/event-registration",
-      seen: false,
-    });
-
-    // Increment notification count
-    await NotificationCount.findOneAndUpdate(
-      { user: receiverId },
-      { $inc: { count: 1 } },
-      { new: true, upsert: true }
-    );
-  }
-
-  // 4️⃣ Handle CANCELLED
-  else if (updated.status === EventRegistrationStatus.CANCELLED) {
-    // Send FCM if token exists
-    if (existUser.fcmToken) {
-      admin.messaging().send({
-        token: existUser.fcmToken,
-        notification: {
-          title: "Event Registration Cancelled",
-          body: "Your event registration has been cancelled",
-        },
-        data: {
-          receiver: String(receiverId),
-          sender: "system",
-          path: "/event-registration",
-        },
-      });
-    }
-
-    // Create notification
-    await Notification.create({
-      receiver: receiverId,
-      title: "Event Registration Cancelled",
-      message: "Your event registration has been cancelled",
-      refId: updated._id,
-      sender: null,
-      path: "/event-registration",
-      seen: false,
-    });
-
-    // Decrement notification count
-    await NotificationCount.findOneAndUpdate(
-      { user: receiverId },
-      { $inc: { count: -1 } },
-      { new: true, upsert: true }
-    );
-  }
 
   return updated;
 };

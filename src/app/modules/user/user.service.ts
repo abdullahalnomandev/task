@@ -15,7 +15,6 @@ import { MemberShipApplication } from '../membershipApplication/membershipApplic
 import { Notification } from '../notification/notification.mode';
 import { NotificationCount } from '../notification/notificationCountModel';
 import { USER_ROLES } from '../../../enums/user';
-import admin from '../../../helpers/firebaseConfig';
 import { UserProfileUpdateRequest } from './user.profileUpdateRequest';
 
 const createUserToDB = async (
@@ -83,25 +82,6 @@ const sendNotificationToUsers = async (
         .lean()) as IUser[]);
 
 
-  // Push notifications
-  const pushResults = await Promise.allSettled(
-    users
-      .filter(user => user.fcmToken)
-      .map(user =>
-        admin.messaging().send({
-          token: user.fcmToken!,
-          notification: {
-            title: 'New Notification',
-            body: message,
-          },
-          data: {
-            receiver: String(user._id),
-            sender: 'system',
-            path: '/notifications',
-          },
-        })
-      )
-  );
 
   // const success = pushResults.filter(r => {
   //   console.log({ r });
